@@ -24,6 +24,8 @@ void cgo_traceback(void* p) {
     }* arg = p;
 
     struct cgo_context ctx;
+    if (arg->sig_ctx != 0)
+      return;
     if (arg->ctx)
         ctx = *(struct cgo_context*) arg->ctx;
     else {
