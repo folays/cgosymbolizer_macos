@@ -3,7 +3,7 @@
 //
 // To use the package, import it for its side effects:
 //
-//     import _ github.com/benesch/cgosymbolizer
+//	import _ github.com/folays/cgosymbolizer_macos
 //
 // cgosymbolizer only supports Linux and macOS. Importing it on another
 // operating system will have no effect.
