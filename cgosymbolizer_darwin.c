@@ -55,6 +55,9 @@ void cgo_traceback(void* p) {
 //        if (unw_is_signal_frame(&ctx.unw_cursor) != 0)
 //            break;
         unw_word_t pc;
+        //if (((AbstractUnwindCursor *)&ctx.unw_cursor)->_info.unwind_info == NULL)
+        if (*(void **)((char *)&ctx.unw_cursor + 240) == NULL)
+            break;
         if (unw_get_reg(&ctx.unw_cursor, UNW_REG_IP, &pc) != 0)
             break;
         if (pc == 0)
