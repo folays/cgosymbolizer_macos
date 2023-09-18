@@ -1,4 +1,6 @@
 #include <dlfcn.h>
+#define UNW_LOCAL_ONLY
+#define _LIBUNWIND_NO_HEAP
 #include <libunwind.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -24,8 +26,15 @@ void cgo_traceback(void* p) {
     }* arg = p;
 
     struct cgo_context ctx;
-    if (arg->sig_ctx != 0)
-      return;
+    arg->buf[0] = 0;
+//    if (arg->sig_ctx != 0)
+//      return;
+
+    // https://github.com/alk/gperftools/commit/2d061481ecff44bddd21f9d862ba9878ee769899
+    // -> weird stuff of if sig_ctx != 0, does :
+    //    (1) uc = *(unw_context_t *)sig_ctx;
+    //    (2) skip unw_getcontext() and does unw_init_local(&cursor, &uc);
+
     if (arg->ctx)
         ctx = *(struct cgo_context*) arg->ctx;
     else {
@@ -35,18 +44,23 @@ void cgo_traceback(void* p) {
             return;
         // Skip the cgo_traceback, x_cgo_callers, and _sigtramp frames.
         for (int i = 0; i < 3; i++)
-            if (unw_step(&ctx.unw_cursor) == 0)
+            if (unw_step(&ctx.unw_cursor) <= 0)
                 return;
+//        if (arg->sig_ctx != 0)
+//          return;
     }
 
     int i = 0;
     while (i < arg->max) {
+//        if (unw_is_signal_frame(&ctx.unw_cursor) != 0)
+//            break;
         unw_word_t pc;
-        unw_get_reg(&ctx.unw_cursor, UNW_REG_IP, &pc);
+        if (unw_get_reg(&ctx.unw_cursor, UNW_REG_IP, &pc) != 0)
+            break;
         if (pc == 0)
             break;
         arg->buf[i++] = pc;
-        if (unw_step(&ctx.unw_cursor) == 0)
+        if (unw_step(&ctx.unw_cursor) <= 0)
             break;
     }
     if (i < arg->max)
